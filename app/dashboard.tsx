@@ -16,7 +16,6 @@ import {
 import { PulseCard } from "../components/features/PulseCard";
 import { PulseDetailModal } from "../components/features/PulseDetailModal";
 import { StatCard } from "../components/features/StatCard";
-import { NavBar } from "../components/ui/NavBar";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -151,11 +150,6 @@ export default function Dashboard() {
         onFavorite={toggleFavorite}
         onShare={handleShare}
         onDelete={(id: string) => setCardToDelete(id)}
-      />
-      <NavBar
-        onHome={() => console.log("Home")}
-        onAdd={() => console.log("Add")}
-        onFavorites={() => console.log("Favs")}
       />
 
       <Modal visible={!!cardToDelete} transparent animationType="fade">
