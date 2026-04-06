@@ -105,7 +105,7 @@ export default function Dashboard() {
           </View>
           <TouchableOpacity
             style={styles.profileCircle}
-            onPress={() => router.push("/profile")}
+            onPress={() => router.push("/")}
           >
             <FontAwesome5 name="user-alt" size={18} color="#4ecca3" />
           </TouchableOpacity>
