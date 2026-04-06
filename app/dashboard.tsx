@@ -1,32 +1,26 @@
-import {
-  FontAwesome5,
-  Ionicons,
-  MaterialCommunityIcons,
-} from "@expo/vector-icons";
+import { FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
-  Dimensions,
   Modal,
-  Platform,
   ScrollView,
   Share,
   StyleSheet,
   Text,
   TouchableOpacity,
-  TouchableWithoutFeedback,
-  View
+  View,
 } from "react-native";
 
-const { width, height } = Dimensions.get("window");
-const isPC = width > 1000;
+import { PulseCard } from "../components/features/PulseCard";
+import { PulseDetailModal } from "../components/features/PulseDetailModal";
+import { StatCard } from "../components/features/StatCard";
+import { NavBar } from "../components/ui/NavBar";
 
 export default function Dashboard() {
   const router = useRouter();
   const fadeAnim = useRef(new Animated.Value(0)).current;
-
   const [selectedCard, setSelectedCard] = useState<any>(null);
   const [cardToDelete, setCardToDelete] = useState<string | null>(null);
 
@@ -35,6 +29,8 @@ export default function Dashboard() {
       id: "1",
       title: "Réseaux de Neurones",
       category: "Apprentissage IA",
+      sourceName: "ArXiv",
+      source: "https://arxiv.org",
       date: "Il y a 2h",
       isFavorite: false,
       summary: [
@@ -47,6 +43,8 @@ export default function Dashboard() {
       id: "2",
       title: "Logique React Native",
       category: "Développement",
+      sourceName: "Docs Expo",
+      source: "https://docs.expo.dev",
       date: "Hier",
       isFavorite: true,
       summary: [
@@ -66,35 +64,27 @@ export default function Dashboard() {
   }, []);
 
   const toggleFavorite = (id: string) => {
-    setPulseCards((prev) =>
-      prev.map((card) =>
-        card.id === id ? { ...card, isFavorite: !card.isFavorite } : card,
-      ),
+    setPulseCards((p) =>
+      p.map((c) => (c.id === id ? { ...c, isFavorite: !c.isFavorite } : c)),
     );
-    if (selectedCard?.id === id) {
-      setSelectedCard((prev: any) => ({
-        ...prev,
-        isFavorite: !prev.isFavorite,
-      }));
-    }
+    if (selectedCard?.id === id)
+      setSelectedCard((p: any) => ({ ...p, isFavorite: !p.isFavorite }));
   };
 
   const handleShare = async (card: any) => {
     try {
-      const message = `Pulse Card : ${card.title}\n\nPoints clés :\n${card.summary.map((p: string) => `• ${p}`).join("\n")}`;
       await Share.share({
-        message: Platform.OS === "android" ? message : card.title,
+        message: `Pulse Card : ${card.title}`,
         title: card.title,
-        url: Platform.OS === "ios" ? "https://pulseboard.ai" : undefined, // Optionnel
       });
-    } catch (error) {
-      console.log(error);
+    } catch (e) {
+      console.log(e);
     }
   };
 
   const handleDelete = () => {
     if (cardToDelete) {
-      setPulseCards((prev) => prev.filter((card) => card.id !== cardToDelete));
+      setPulseCards((p) => p.filter((c) => c.id !== cardToDelete));
       setCardToDelete(null);
       setSelectedCard(null);
     }
@@ -154,65 +144,20 @@ export default function Dashboard() {
         </ScrollView>
       </Animated.View>
 
-      {/* --- MODALE DÉTAILS --- */}
-      <Modal
-        visible={!!selectedCard && !cardToDelete}
-        transparent
-        animationType="none"
-        onRequestClose={() => setSelectedCard(null)}
-      >
-        <TouchableWithoutFeedback onPress={() => setSelectedCard(null)}>
-          <View style={styles.detailOverlay}>
-            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-              <View style={styles.detailGlass}>
-                <View style={styles.modalDragLine} />
-                <View style={styles.modalHeader}>
-                  <AnimatedHeartButton
-                    isFavorite={selectedCard?.isFavorite}
-                    onPress={() => toggleFavorite(selectedCard?.id)}
-                    size={28}
-                  />
+      <PulseDetailModal
+        isVisible={!!selectedCard && !cardToDelete}
+        card={selectedCard}
+        onClose={() => setSelectedCard(null)}
+        onFavorite={toggleFavorite}
+        onShare={handleShare}
+        onDelete={(id: string) => setCardToDelete(id)}
+      />
+      <NavBar
+        onHome={() => console.log("Home")}
+        onAdd={() => console.log("Add")}
+        onFavorites={() => console.log("Favs")}
+      />
 
-                  {/* NOUVEAU : BOUTON PARTAGE */}
-                  <TouchableOpacity
-                    onPress={() => handleShare(selectedCard)}
-                    activeOpacity={0.6}
-                  >
-                    <Ionicons name="share-outline" size={28} color="#4ecca3" />
-                  </TouchableOpacity>
-
-                  <AnimatedTrashButton
-                    onDelete={() => setCardToDelete(selectedCard?.id)}
-                  />
-                </View>
-
-                <Text style={styles.detailCategory}>
-                  {selectedCard?.category}
-                </Text>
-                <Text style={styles.detailTitle}>{selectedCard?.title}</Text>
-
-                <View style={styles.summaryContainer}>
-                  <Text style={styles.summaryLabel}>POINTS CLÉS</Text>
-                  {selectedCard?.summary.map((point: string, i: number) => (
-                    <Text key={i} style={styles.bulletPoint}>
-                      • {point}
-                    </Text>
-                  ))}
-                </View>
-
-                <TouchableOpacity
-                  style={styles.closeBtn}
-                  onPress={() => setSelectedCard(null)}
-                >
-                  <Text style={styles.closeBtnText}>Fermer</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* --- MODALE DE SUPPRESSION --- */}
       <Modal visible={!!cardToDelete} transparent animationType="fade">
         <View style={styles.confirmOverlay}>
           <View style={styles.confirmBox}>
@@ -227,7 +172,6 @@ export default function Dashboard() {
             <Text style={styles.confirmText}>
               Cette action est irréversible.
             </Text>
-
             <View style={styles.confirmActionRow}>
               <TouchableOpacity
                 style={styles.cancelActionBtn}
@@ -235,7 +179,6 @@ export default function Dashboard() {
               >
                 <Text style={styles.cancelActionText}>Annuler</Text>
               </TouchableOpacity>
-
               <TouchableOpacity
                 style={styles.deleteActionBtn}
                 onPress={handleDelete}
@@ -251,198 +194,9 @@ export default function Dashboard() {
           </View>
         </View>
       </Modal>
-
-      <View style={styles.navBarContainer}>
-        <View style={styles.navBarGlass}>
-          <TouchableOpacity style={styles.navBtn}>
-            <FontAwesome5 name="home" size={18} color="#4ecca3" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.centerBtn}>
-            <FontAwesome5 name="plus" size={20} color="#020817" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navBtn}>
-            <Ionicons name="heart" size={24} color="#64748b" />
-          </TouchableOpacity>
-        </View>
-      </View>
     </View>
   );
 }
-
-// --- BOUTONS ANIMÉS ET SOUS-COMPOSANTS ---
-const AnimatedTrashButton = ({ onDelete }: any) => {
-  const shakeAnim = useRef(new Animated.Value(0)).current;
-  const handlePress = () => {
-    Animated.sequence([
-      Animated.timing(shakeAnim, {
-        toValue: 8,
-        duration: 40,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnim, {
-        toValue: -8,
-        duration: 40,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnim, {
-        toValue: 0,
-        duration: 40,
-        useNativeDriver: true,
-      }),
-    ]).start(() => onDelete());
-  };
-  return (
-    <TouchableOpacity onPress={handlePress}>
-      <Animated.View style={{ transform: [{ translateX: shakeAnim }] }}>
-        <MaterialCommunityIcons
-          name="trash-can-outline"
-          size={28}
-          color="#ef4444"
-        />
-      </Animated.View>
-    </TouchableOpacity>
-  );
-};
-
-const AnimatedHeartButton = ({ isFavorite, onPress, size = 22 }: any) => {
-  const pulseAnim = useRef(new Animated.Value(0)).current;
-  const breakAnim = useRef(new Animated.Value(0)).current;
-  const [showBreak, setShowBreak] = useState(false);
-  const didMount = useRef(false);
-
-  useEffect(() => {
-    if (!didMount.current) {
-      didMount.current = true;
-      return;
-    }
-    if (isFavorite) {
-      pulseAnim.setValue(0);
-      Animated.timing(pulseAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      setShowBreak(true);
-      breakAnim.setValue(0);
-      Animated.timing(breakAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }).start(() => setShowBreak(false));
-    }
-  }, [isFavorite]);
-
-  return (
-    <View style={styles.favBtnArea}>
-      <Animated.View
-        style={[
-          styles.pulseHeart,
-          {
-            opacity: pulseAnim.interpolate({
-              inputRange: [0, 0.1, 1],
-              outputRange: [0, 0.6, 0],
-            }),
-            transform: [
-              {
-                scale: pulseAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [1, 2.5],
-                }),
-              },
-            ],
-          },
-        ]}
-      >
-        <Ionicons name="heart" size={size} color="#ef4444" />
-      </Animated.View>
-      {showBreak && (
-        <Animated.View
-          style={[
-            styles.breakContainer,
-            {
-              opacity: breakAnim.interpolate({
-                inputRange: [0, 0.8, 1],
-                outputRange: [1, 1, 0],
-              }),
-              transform: [
-                {
-                  translateY: breakAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, 25],
-                  }),
-                },
-                { rotate: "-20deg" },
-              ],
-            },
-          ]}
-        >
-          <MaterialCommunityIcons
-            name="heart-broken"
-            size={size}
-            color="#ef4444"
-          />
-        </Animated.View>
-      )}
-      <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
-        <Ionicons
-          name={isFavorite ? "heart" : "heart-outline"}
-          size={size}
-          color={isFavorite ? "#ef4444" : "rgba(255,255,255,0.3)"}
-        />
-      </TouchableOpacity>
-    </View>
-  );
-};
-
-const PulseCard = ({ card, onPress, onFavorite }: any) => (
-  <TouchableOpacity
-    style={styles.glassWrapperPulse}
-    onPress={onPress}
-    activeOpacity={0.7}
-  >
-    <LinearGradient
-      colors={["rgba(255,255,255,0.06)", "rgba(255,255,255,0.01)"]}
-      style={styles.pulseCardInternal}
-    >
-      <View style={{ flex: 1 }}>
-        <Text style={styles.categoryTag}>{card.category}</Text>
-        <Text style={styles.cardTitle}>{card.title}</Text>
-        <Text style={styles.cardDate}>{card.date}</Text>
-      </View>
-      <AnimatedHeartButton isFavorite={card.isFavorite} onPress={onFavorite} />
-    </LinearGradient>
-  </TouchableOpacity>
-);
-
-const StatCard = ({ icon, label, value, color, isSerie }: any) => (
-  <View style={styles.glassWrapperStat}>
-    <LinearGradient
-      colors={["rgba(255,255,255,0.08)", "rgba(255,255,255,0.02)"]}
-      style={styles.cardInternal}
-    >
-      <View style={styles.statHeader}>
-        <FontAwesome5 name={icon} size={14} color={color} />
-        <Text style={[styles.statLabelSmall, { color: color + "aa" }]}>
-          {label}
-        </Text>
-      </View>
-      <Text style={styles.statValue}>{value}</Text>
-      {isSerie && (
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBarBackground}>
-            <View
-              style={[
-                styles.progressBarFill,
-                { width: value, backgroundColor: color },
-              ]}
-            />
-          </View>
-        </View>
-      )}
-    </LinearGradient>
-  </View>
-);
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#020817" },
@@ -473,52 +227,6 @@ const styles = StyleSheet.create({
   scrollArea: { paddingHorizontal: 25, paddingBottom: 140 },
   statsContainer: { flexDirection: "row", gap: 15, marginBottom: 30 },
   cardsGrid: { gap: 12 },
-  glassWrapperStat: {
-    flex: 1,
-    borderRadius: 24,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    backgroundColor: "rgba(15, 23, 42, 0.3)",
-  },
-  glassWrapperPulse: {
-    borderRadius: 24,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-    backgroundColor: "rgba(15, 23, 42, 0.2)",
-  },
-  cardInternal: { padding: 20 },
-  pulseCardInternal: {
-    padding: 22,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  statHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 10,
-  },
-  statLabelSmall: { fontSize: 9, fontWeight: "900" },
-  statValue: { color: "#fff", fontSize: 28, fontWeight: "900" },
-  progressContainer: { marginTop: 15 },
-  progressBarBackground: {
-    height: 6,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  progressBarFill: { height: "100%", borderRadius: 3 },
-  categoryTag: {
-    color: "#4ecca3",
-    fontSize: 9,
-    fontWeight: "900",
-    textTransform: "uppercase",
-    marginBottom: 6,
-  },
-  cardTitle: { color: "#fff", fontSize: 17, fontWeight: "700" },
-  cardDate: { color: "rgba(148, 163, 184, 0.5)", fontSize: 12, marginTop: 6 },
   sectionTitle: {
     color: "rgba(255,255,255,0.15)",
     fontSize: 11,
@@ -526,14 +234,6 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginBottom: 15,
   },
-  favBtnArea: {
-    padding: 5,
-    position: "relative",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pulseHeart: { position: "absolute", alignSelf: "center" },
-  breakContainer: { position: "absolute", alignSelf: "center" },
   confirmOverlay: {
     flex: 1,
     backgroundColor: "rgba(2, 8, 23, 0.9)",
@@ -570,7 +270,6 @@ const styles = StyleSheet.create({
     color: "#94a3b8",
     fontSize: 14,
     textAlign: "center",
-    lineHeight: 20,
     marginBottom: 25,
   },
   confirmActionRow: { flexDirection: "row", gap: 12, width: "100%" },
@@ -592,81 +291,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   deleteActionText: { color: "#fff", fontWeight: "900" },
-  detailOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(2, 8, 23, 0.8)",
-    justifyContent: "flex-end",
-  },
-  detailGlass: {
-    backgroundColor: "#0f172a",
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    padding: 30,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    minHeight: height * 0.7,
-  },
-  modalDragLine: {
-    width: 40,
-    height: 5,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderRadius: 3,
-    alignSelf: "center",
-    marginBottom: 20,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 25,
-  },
-  detailCategory: { color: "#4ecca3", fontSize: 11, fontWeight: "900" },
-  detailTitle: { color: "#fff", fontSize: 28, fontWeight: "900", marginTop: 8 },
-  summaryContainer: { marginTop: 35 },
-  summaryLabel: {
-    color: "rgba(255,255,255,0.25)",
-    fontSize: 10,
-    fontWeight: "900",
-    marginBottom: 15,
-  },
-  bulletPoint: {
-    color: "#94a3b8",
-    fontSize: 15,
-    lineHeight: 26,
-    marginBottom: 10,
-  },
-  closeBtn: {
-    marginTop: "auto",
-    backgroundColor: "rgba(255,255,255,0.03)",
-    padding: 20,
-    borderRadius: 20,
-    alignItems: "center",
-  },
-  closeBtnText: { color: "#fff", fontWeight: "800" },
-  navBarContainer: {
-    position: "absolute",
-    bottom: 35,
-    width: "100%",
-    alignItems: "center",
-  },
-  navBarGlass: {
-    width: isPC ? 400 : "85%",
-    height: 72,
-    borderRadius: 36,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    backgroundColor: "rgba(15, 23, 42, 0.95)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-  },
-  navBtn: { padding: 15 },
-  centerBtn: {
-    backgroundColor: "#4ecca3",
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-  },
 });
