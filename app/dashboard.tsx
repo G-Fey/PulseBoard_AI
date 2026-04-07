@@ -10,12 +10,13 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 import { PulseCard } from "../components/features/PulseCard";
 import { PulseDetailModal } from "../components/features/PulseDetailModal";
 import { StatCard } from "../components/features/StatCard";
+import { NavBar } from "../components/ui/NavBar";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -104,7 +105,7 @@ export default function Dashboard() {
           </View>
           <TouchableOpacity
             style={styles.profileCircle}
-            onPress={() => router.push("/")}
+            onPress={() => router.push("/profile")}
           >
             <FontAwesome5 name="user-alt" size={18} color="#4ecca3" />
           </TouchableOpacity>
@@ -150,6 +151,11 @@ export default function Dashboard() {
         onFavorite={toggleFavorite}
         onShare={handleShare}
         onDelete={(id: string) => setCardToDelete(id)}
+      />
+      <NavBar
+        onHome={() => console.log("Home")}
+        onAdd={() => console.log("Add")}
+        onFavorites={() => console.log("Favs")}
       />
 
       <Modal visible={!!cardToDelete} transparent animationType="fade">
