@@ -1,28 +1,42 @@
-import { FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
+import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
+  LayoutAnimation,
   Modal,
+  Platform,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
+  UIManager,
   View,
 } from "react-native";
 
 import { PulseCard } from "../components/features/PulseCard";
 import { PulseDetailModal } from "../components/features/PulseDetailModal";
 import { StatCard } from "../components/features/StatCard";
-import { NavBar } from "../components/ui/NavBar";
+import { ThemeBubble } from "../components/features/ThemeBubble";
+
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function Dashboard() {
   const router = useRouter();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // ÉTATS
   const [selectedCard, setSelectedCard] = useState<any>(null);
   const [cardToDelete, setCardToDelete] = useState<string | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+  const [newThemeName, setNewThemeName] = useState("");
 
   const MAX_VEILLES = 5;
 
@@ -31,32 +45,26 @@ export default function Dashboard() {
     { id: "2", name: "Rendu Unreal 5", isActive: true },
     { id: "3", name: "React Native", isActive: false },
     { id: "4", name: "Motion Design", isActive: true },
-    { id: "5", name: "UI/UX", isActive: false },
   ]);
 
   const [pulseCards, setPulseCards] = useState([
     {
       id: "1",
       title: "Réseaux de Neurones",
-      category: "Apprentissage IA",
+      category: "IA",
       sourceName: "ArXiv",
-      source: "https://arxiv.org",
-      date: "Il y a 2h",
+      date: "2h",
       isFavorite: false,
-      summary: [
-        "Concept de rétropropagation",
-        "Architecture des couches cachées",
-      ],
+      summary: ["Retropropagation"],
     },
     {
       id: "2",
-      title: "Logique React Native",
-      category: "Développement",
-      sourceName: "Docs Expo",
-      source: "https://docs.expo.dev",
+      title: "Logique React",
+      category: "Dev",
+      sourceName: "Docs",
       date: "Hier",
       isFavorite: true,
-      summary: ["Gestion du Virtual DOM", "Architecture des Hooks"],
+      summary: ["Hooks"],
     },
   ]);
 
@@ -68,34 +76,23 @@ export default function Dashboard() {
     }).start();
   }, []);
 
-  const toggleTheme = (id: string) => {
-    setThemes((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, isActive: !t.isActive } : t)),
-    );
-  };
-
-  const activeCount = themes.filter((t) => t.isActive).length;
-
-  const toggleFavorite = (id: string) => {
-    setPulseCards((p) =>
-      p.map((c) => (c.id === id ? { ...c, isFavorite: !c.isFavorite } : c)),
-    );
-    if (selectedCard?.id === id)
-      setSelectedCard((p: any) => ({ ...p, isFavorite: !p.isFavorite }));
-  };
-
-  const handleShare = async (card: any) => {
-    try {
-      await Share.share({
-        message: `Pulse Card : ${card.title}`,
-        title: card.title,
-      });
-    } catch (e) {
-      console.log(e);
+  const addNewTheme = () => {
+    if (newThemeName.trim()) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setThemes([
+        ...themes,
+        {
+          id: Math.random().toString(),
+          name: newThemeName.trim(),
+          isActive: true,
+        },
+      ]);
+      setNewThemeName("");
+      setIsAddModalVisible(false);
     }
   };
 
-  const handleDelete = () => {
+  const handleDeleteCard = () => {
     if (cardToDelete) {
       setPulseCards((p) => p.filter((c) => c.id !== cardToDelete));
       setCardToDelete(null);
@@ -105,11 +102,13 @@ export default function Dashboard() {
 
   return (
     <View style={styles.container}>
+      {/* 1. FOND DE L'APP */}
       <LinearGradient
         colors={["#020817", "#0f172a", "#020817"]}
         style={StyleSheet.absoluteFillObject}
       />
 
+      {/* 3. CONTENU PRINCIPAL */}
       <Animated.View style={[styles.mainContent, { opacity: fadeAnim }]}>
         <View style={styles.header}>
           <View>
@@ -128,69 +127,63 @@ export default function Dashboard() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollArea}
         >
-          {/* STATS - Marges réduites */}
           <View style={styles.statsContainer}>
             <StatCard
               icon="brain"
-              label="Pulse Cards"
+              label="Cards"
               value={pulseCards.length.toString()}
               color="#4ecca3"
             />
             <StatCard
               icon="bolt"
-              label="Série (7j)"
+              label="Série"
               value="57%"
               color="#fbbf24"
               isSerie
             />
           </View>
 
-          {/* SECTION THÈMES - Espacement compact */}
           <View style={styles.themesWrapper}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>VEILLES ACTIVES</Text>
-              <Text style={styles.counterText}>
-                {activeCount} / {MAX_VEILLES}
+              <Text style={styles.sectionTitle}>
+                VEILLES ACTIVES ({themes.filter((t) => t.isActive).length}/
+                {MAX_VEILLES})
               </Text>
+              <TouchableOpacity
+                onPress={() => setIsEditMode(!isEditMode)}
+                style={[
+                  styles.editButton,
+                  isEditMode && styles.editButtonActive,
+                ]}
+              >
+                <Ionicons
+                  name={isEditMode ? "checkmark" : "trash-outline"}
+                  size={18}
+                  color={isEditMode ? "#4ecca3" : "#64748b"}
+                />
+              </TouchableOpacity>
             </View>
             <View style={styles.themesGrid}>
-              {themes.map((theme) => (
-                <TouchableOpacity
-                  key={theme.id}
-                  style={[
-                    styles.themeBubble,
-                    theme.isActive
-                      ? styles.bubbleActive
-                      : styles.bubbleInactive,
-                  ]}
-                  onPress={() => toggleTheme(theme.id)}
-                >
-                  <LinearGradient
-                    colors={
-                      theme.isActive
-                        ? [
-                            "rgba(78, 204, 163, 0.25)",
-                            "rgba(78, 204, 163, 0.05)",
-                          ]
-                        : ["rgba(255,255,255,0.05)", "rgba(255,255,255,0.02)"]
-                    }
-                    style={styles.bubbleGradient}
-                  >
-                    <Text
-                      style={[
-                        styles.themeText,
-                        { opacity: theme.isActive ? 1 : 0.4 },
-                      ]}
-                    >
-                      {theme.name}
-                    </Text>
-                  </LinearGradient>
-                </TouchableOpacity>
+              {themes.map((item) => (
+                <ThemeBubble
+                  key={item.id}
+                  theme={item}
+                  isEditMode={isEditMode}
+                  onPress={(id) => {
+                    if (isEditMode)
+                      setThemes((prev) => prev.filter((t) => t.id !== id));
+                    else
+                      setThemes((prev) =>
+                        prev.map((t) =>
+                          t.id === id ? { ...t, isActive: !t.isActive } : t,
+                        ),
+                      );
+                  }}
+                />
               ))}
             </View>
           </View>
 
-          {/* SECTION ANALYSES - Retour pleine largeur et marges réduites */}
           <Text style={styles.sectionTitle}>DERNIÈRES ANALYSES</Text>
           <View style={styles.cardsGrid}>
             {pulseCards.map((card) => (
@@ -198,58 +191,40 @@ export default function Dashboard() {
                 key={card.id}
                 card={card}
                 onPress={() => setSelectedCard(card)}
-                onFavorite={() => toggleFavorite(card.id)}
+                onFavorite={() => {}}
               />
             ))}
           </View>
         </ScrollView>
       </Animated.View>
 
+      {/* AUTRES MODALES TECHNIQUES */}
       <PulseDetailModal
-        isVisible={!!selectedCard && !cardToDelete}
+        isVisible={!!selectedCard}
         card={selectedCard}
         onClose={() => setSelectedCard(null)}
-        onFavorite={toggleFavorite}
-        onShare={handleShare}
-        onDelete={(id: string) => setCardToDelete(id)}
+        onFavorite={() => {}}
+        onDelete={setCardToDelete}
       />
 
-      <NavBar onHome={() => {}} onAdd={() => {}} onFavorites={() => {}} />
-
-      {/* MODAL SUPPRESSION */}
       <Modal visible={!!cardToDelete} transparent animationType="fade">
         <View style={styles.confirmOverlay}>
           <View style={styles.confirmBox}>
-            <View style={styles.warningIconCircle}>
-              <MaterialCommunityIcons
-                name="alert-decagram"
-                size={40}
-                color="#ef4444"
-              />
-            </View>
             <Text style={styles.confirmTitle}>Supprimer ?</Text>
-            <Text style={styles.confirmText}>
-              Cette action est irréversible.
-            </Text>
-            <View style={styles.confirmActionRow}>
-              <TouchableOpacity
-                style={styles.cancelActionBtn}
-                onPress={() => setCardToDelete(null)}
-              >
-                <Text style={styles.cancelActionText}>Annuler</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.deleteActionBtn}
-                onPress={handleDelete}
-              >
-                <LinearGradient
-                  colors={["#ef4444", "#991b1b"]}
-                  style={styles.deleteGradient}
-                >
-                  <Text style={styles.deleteActionText}>Supprimer</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={styles.deleteActionBtn}
+              onPress={handleDeleteCard}
+            >
+              <Text style={{ color: "white", fontWeight: "900" }}>
+                Confirmer
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setCardToDelete(null)}
+              style={{ marginTop: 15 }}
+            >
+              <Text style={{ color: "#64748b" }}>Annuler</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -259,20 +234,15 @@ export default function Dashboard() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#020817" },
-  mainContent: { flex: 1, paddingTop: 50 }, // Réduit (était 60)
+  mainContent: { flex: 1, paddingTop: 50 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 25,
     marginBottom: 20,
-  }, // Réduit (était 30)
-  welcomeText: { color: "#fff", fontSize: 26, fontWeight: "900" },
-  statusValue: {
-    color: "#4ecca3",
-    fontSize: 10,
-    fontWeight: "900",
-    marginTop: 4,
   },
+  welcomeText: { color: "#fff", fontSize: 26, fontWeight: "900" },
+  statusValue: { color: "#4ecca3", fontSize: 10, fontWeight: "900" },
   profileCircle: {
     width: 48,
     height: 48,
@@ -280,102 +250,66 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(78, 204, 163, 0.1)",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(78, 204, 163, 0.2)",
   },
-
-  scrollArea: { paddingHorizontal: 25, paddingBottom: 120 },
-  statsContainer: { flexDirection: "row", gap: 15, marginBottom: 25 }, // Réduit (était 35)
-
-  // --- THÈMES ---
-  themesWrapper: { marginBottom: 25 }, // Réduit (était 35)
+  scrollArea: { paddingHorizontal: 25, paddingBottom: 150 },
+  statsContainer: { flexDirection: "row", gap: 15, marginBottom: 25 },
+  themesWrapper: { marginBottom: 25 },
   sectionHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 12,
   },
-  counterText: {
-    color: "#4ecca3",
-    fontSize: 12,
-    fontWeight: "900",
-    backgroundColor: "rgba(78, 204, 163, 0.1)",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  themesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  themeBubble: { borderRadius: 12, overflow: "hidden", borderWidth: 1 },
-  bubbleActive: { borderColor: "rgba(78, 204, 163, 0.5)" },
-  bubbleInactive: { borderColor: "rgba(255, 255, 255, 0.08)" },
-  bubbleGradient: { paddingHorizontal: 12, paddingVertical: 8 },
-  themeText: { color: "#fff", fontSize: 12, fontWeight: "700" },
-
-  // --- ANALYSES ---
-  cardsGrid: { gap: 12 }, // Espacement interne entre les cartes
   sectionTitle: {
-    color: "rgba(255,255,255,0.25)",
+    color: "rgba(255,255,255,0.3)",
     fontSize: 11,
     fontWeight: "900",
-    letterSpacing: 2,
-    marginBottom: 12,
-  }, // Réduit (était 15)
+    letterSpacing: 1,
+  },
+  editButton: {
+    padding: 8,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.03)",
+  },
+  editButtonActive: { borderColor: "#4ecca3", borderWidth: 1 },
+  themesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  cardsGrid: { gap: 12 },
+
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+
+  textInput: { color: "#fff", padding: 18, fontSize: 16 },
+  createBtn: { borderRadius: 15, overflow: "hidden" },
+  createGradient: { padding: 18, alignItems: "center" },
+  createBtnText: { color: "#020817", fontWeight: "900" },
 
   confirmOverlay: {
     flex: 1,
-    backgroundColor: "rgba(2, 8, 23, 0.9)",
+    backgroundColor: "rgba(0,0,0,0.8)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
   },
   confirmBox: {
-    width: "100%",
-    maxWidth: 340,
     backgroundColor: "#0f172a",
-    borderRadius: 32,
-    padding: 25,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    padding: 30,
+    borderRadius: 20,
     alignItems: "center",
-  },
-  warningIconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 20,
+    width: "80%",
   },
   confirmTitle: {
-    color: "#fff",
-    fontSize: 22,
+    color: "white",
+    fontSize: 20,
     fontWeight: "900",
-    marginBottom: 10,
+    marginBottom: 20,
   },
-  confirmText: {
-    color: "#94a3b8",
-    fontSize: 14,
-    textAlign: "center",
-    marginBottom: 25,
-  },
-  confirmActionRow: { flexDirection: "row", gap: 12, width: "100%" },
-  cancelActionBtn: {
-    flex: 1,
-    paddingVertical: 15,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.05)",
+  deleteActionBtn: {
+    backgroundColor: "#ef4444",
+    padding: 15,
+    borderRadius: 12,
+    width: "100%",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
   },
-  cancelActionText: { color: "#fff", fontWeight: "700" },
-  deleteActionBtn: { flex: 1.5, borderRadius: 16, overflow: "hidden" },
-  deleteGradient: {
-    flex: 1,
-    paddingVertical: 15,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  deleteActionText: { color: "#fff", fontWeight: "900" },
 });

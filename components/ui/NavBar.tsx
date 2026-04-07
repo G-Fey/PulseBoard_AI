@@ -16,7 +16,7 @@ export const NavBar = ({ onAdd }: any) => {
   const isFavorites = pathname === "/favorites";
 
   return (
-    <View style={styles.navBarContainer}>
+    <View style={styles.navBarContainer} pointerEvents="box-none">
       <View style={styles.navBarGlass}>
         {/* --- GAUCHE : MAISON --- */}
         <TouchableOpacity
@@ -34,7 +34,14 @@ export const NavBar = ({ onAdd }: any) => {
         {/* --- CENTRE : DYNAMIQUE (PLUS ou COEUR) --- */}
         <View style={styles.centerContainer}>
           {isDashboard ? (
-            <TouchableOpacity style={styles.centerBtnActive} onPress={onAdd}>
+            <TouchableOpacity
+              style={styles.centerBtnActive}
+              onPress={() => {
+                console.log("Clic détecté !");
+                // Ajoute ça pour tester dans ton terminal
+                onAdd();
+              }}
+            >
               <FontAwesome5 name="plus" size={20} color="#020817" />
             </TouchableOpacity>
           ) : isFavorites ? (

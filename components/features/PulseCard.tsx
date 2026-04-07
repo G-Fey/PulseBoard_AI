@@ -31,7 +31,7 @@ export const PulseCard = ({ card, onPress, onFavorite }: any) => (
 const styles = StyleSheet.create({
   wrapper: { width: "100%", marginBottom: 12 },
   internalCard: { padding: 0 }, // On laisse le padding au contentRow
-  contentRow: { flexDirection: "row", alignItems: "center", padding: 22 },
+  contentRow: { flexDirection: "row", alignItems: "center", padding: 2 },
   category: {
     color: "#4ecca3",
     fontSize: 9,
@@ -40,5 +40,5 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   title: { color: "#fff", fontSize: 17, fontWeight: "700" },
-  date: { color: "rgba(148, 163, 184, 0.5)", fontSize: 12, marginTop: 6 },
+  date: { color: "rgba(148, 163, 184, 0.5)", fontSize: 12, marginTop: 2 },
 });
