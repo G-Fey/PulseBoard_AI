@@ -1,165 +1,218 @@
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import React from "react";
 import {
-  Dimensions,
+  Alert,
   Linking,
   Modal,
+  ScrollView,
+  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from "react-native";
-import {
-  AnimatedHeartButton,
-  AnimatedTrashButton,
-} from "../ui/AnimatedButtons";
 
-const { height } = Dimensions.get("window");
+interface Props {
+  isVisible: boolean;
+  card: any;
+  onClose: () => void;
+  onFavorite: () => void;
+  onDelete: (id: string) => void;
+}
 
 export const PulseDetailModal = ({
   isVisible,
   card,
   onClose,
   onFavorite,
-  onShare,
   onDelete,
-}: any) => {
+}: Props) => {
   if (!card) return null;
+
+  const openSource = async () => {
+    const url = card.url || "https://google.com";
+    const supported = await Linking.canOpenURL(url);
+    if (supported) await Linking.openURL(url);
+    else Alert.alert("Erreur", "Lien invalide.");
+  };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({ message: `Analyse : ${card.title}` });
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   return (
     <Modal
       visible={isVisible}
       transparent
       animationType="slide"
+      statusBarTranslucent
       onRequestClose={onClose}
     >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.detailOverlay}>
-          <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-            <View style={styles.detailGlass}>
-              <View style={styles.modalDragLine} />
-              <View style={styles.modalHeader}>
-                <AnimatedHeartButton
-                  isFavorite={card.isFavorite}
-                  onPress={() => onFavorite(card.id)}
-                  size={28}
-                />
-                <TouchableOpacity onPress={() => onShare(card)}>
-                  <Ionicons name="share-outline" size={28} color="#4ecca3" />
-                </TouchableOpacity>
-                <AnimatedTrashButton onDelete={() => onDelete(card.id)} />
-              </View>
+      <View style={styles.overlay}>
+        <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
 
-              <Text style={styles.detailCategory}>{card.category}</Text>
-              <Text style={styles.detailTitle}>{card.title}</Text>
+        <TouchableOpacity
+          style={styles.dismissArea}
+          activeOpacity={1}
+          onPress={onClose}
+        />
 
-              {card.source && (
+        <View style={styles.modalContent}>
+          <View style={{ flex: 1 }}>
+            {/* HEADER RÉDUIT */}
+            <View style={styles.header}>
+              <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+                <Ionicons name="close" size={24} color="white" />
+              </TouchableOpacity>
+
+              <View style={styles.actions}>
                 <TouchableOpacity
-                  style={styles.sourceBadge}
-                  onPress={() => Linking.openURL(card.source)}
+                  onPress={handleShare}
+                  style={styles.actionIcon}
                 >
-                  <Ionicons name="link" size={14} color="#4ecca3" />
-                  <Text style={styles.sourceText}>
-                    {card.sourceName || "Source"}
-                  </Text>
-                  <Feather
-                    name="external-link"
-                    size={12}
-                    color="rgba(255,255,255,0.3)"
-                    style={{ marginLeft: 5 }}
+                  <Ionicons name="share-outline" size={22} color="#4ecca3" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={onFavorite}
+                  style={styles.actionIcon}
+                >
+                  <Ionicons
+                    name={card.isFavorite ? "heart" : "heart-outline"}
+                    size={22}
+                    color={card.isFavorite ? "#ef4444" : "#4ecca3"}
                   />
                 </TouchableOpacity>
-              )}
-
-              <View style={styles.summaryContainer}>
-                <Text style={styles.summaryLabel}>POINTS CLÉS</Text>
-                {card.summary.map((point: string, i: number) => (
-                  <Text key={i} style={styles.bulletPoint}>
-                    • {point}
-                  </Text>
-                ))}
+                <TouchableOpacity
+                  onPress={() => onDelete(card.id)}
+                  style={styles.actionIcon}
+                >
+                  <Ionicons name="trash-outline" size={22} color="#64748b" />
+                </TouchableOpacity>
               </View>
-
-              <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-                <Text style={styles.closeBtnText}>Fermer</Text>
-              </TouchableOpacity>
             </View>
-          </TouchableWithoutFeedback>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollBody}
+            >
+              <Text style={styles.category}>{card.category}</Text>
+              <Text style={styles.title}>{card.title}</Text>
+
+              <TouchableOpacity
+                onPress={openSource}
+                style={styles.sourceContainer}
+              >
+                <FontAwesome5
+                  name="external-link-alt"
+                  size={10}
+                  color="#4ecca3"
+                />
+                <Text style={styles.sourceText}>{card.sourceName}</Text>
+              </TouchableOpacity>
+
+              <View style={styles.divider} />
+
+              <Text style={styles.sectionLabel}>POINTS CLÉS</Text>
+
+              <View style={styles.bulletsContainer}>
+                {card.summary
+                  .slice(0, 3)
+                  .map((point: string, index: number) => (
+                    <View key={index} style={styles.bulletRow}>
+                      <View style={styles.bullet} />
+                      <Text style={styles.bulletText}>{point}</Text>
+                    </View>
+                  ))}
+              </View>
+            </ScrollView>
+          </View>
         </View>
-      </TouchableWithoutFeedback>
+      </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  detailOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(2, 8, 23, 0.8)",
-    justifyContent: "flex-end",
-  },
-  detailGlass: {
+  overlay: { flex: 1, justifyContent: "flex-end" },
+  dismissArea: { ...StyleSheet.absoluteFillObject },
+  modalContent: {
     backgroundColor: "#0f172a",
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    padding: 30,
+    borderTopLeftRadius: 35,
+    borderTopRightRadius: 35,
+    height: "65%", // TAILLE RÉDUITE ICI (était 85%)
+    padding: 20,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
-    minHeight: height * 0.7,
   },
-  modalDragLine: {
-    width: 40,
-    height: 5,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderRadius: 3,
-    alignSelf: "center",
-    marginBottom: 20,
-  },
-  modalHeader: {
+  header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 25,
+    marginBottom: 20,
   },
-  detailCategory: { color: "#4ecca3", fontSize: 11, fontWeight: "900" },
-  detailTitle: { color: "#fff", fontSize: 28, fontWeight: "900", marginTop: 8 },
-  sourceBadge: {
+  closeBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actions: { flexDirection: "row", gap: 5 },
+  actionIcon: { padding: 8 },
+  scrollBody: { paddingBottom: 20 },
+  category: {
+    color: "#4ecca3",
+    fontWeight: "900",
+    fontSize: 10,
+    letterSpacing: 2,
+    marginBottom: 8,
+    textTransform: "uppercase",
+  },
+  title: {
+    color: "white",
+    fontSize: 22,
+    fontWeight: "900",
+    lineHeight: 28,
+    marginBottom: 15,
+  },
+  sourceContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(78, 204, 163, 0.1)",
+    gap: 8,
+    marginBottom: 20,
+    backgroundColor: "rgba(78, 204, 163, 0.08)",
     paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 10,
+    borderRadius: 8,
     alignSelf: "flex-start",
-    marginTop: 15,
-    borderWidth: 1,
-    borderColor: "rgba(78, 204, 163, 0.2)",
   },
-  sourceText: {
-    color: "#4ecca3",
-    fontSize: 12,
-    fontWeight: "700",
-    marginLeft: 6,
+  sourceText: { color: "#4ecca3", fontSize: 12, fontWeight: "700" },
+  divider: {
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    marginBottom: 20,
   },
-  summaryContainer: { marginTop: 35 },
-  summaryLabel: {
-    color: "rgba(255,255,255,0.25)",
+  sectionLabel: {
+    color: "rgba(255,255,255,0.3)",
     fontSize: 10,
     fontWeight: "900",
     marginBottom: 15,
   },
-  bulletPoint: {
-    color: "#94a3b8",
-    fontSize: 15,
-    lineHeight: 26,
-    marginBottom: 10,
+  bulletsContainer: { gap: 12 },
+  bulletRow: { flexDirection: "row", alignItems: "flex-start" },
+  bullet: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: "#4ecca3",
+    marginTop: 7,
+    marginRight: 12,
   },
-  closeBtn: {
-    marginTop: "auto",
-    backgroundColor: "rgba(255,255,255,0.03)",
-    padding: 20,
-    borderRadius: 20,
-    alignItems: "center",
-  },
-  closeBtnText: { color: "#fff", fontWeight: "800" },
+  bulletText: { color: "#94a3b8", fontSize: 14, lineHeight: 20, flex: 1 },
 });
