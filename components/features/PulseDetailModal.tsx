@@ -64,34 +64,36 @@ export const PulseDetailModal = ({
 
         <View style={styles.modalContent}>
           <View style={{ flex: 1 }}>
-            {/* HEADER RÉDUIT */}
+            {/* HEADER OPTIMISÉ UI/UX */}
             <View style={styles.header}>
               <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
                 <Ionicons name="close" size={24} color="white" />
               </TouchableOpacity>
 
-              <View style={styles.actions}>
+              <View style={styles.actionsGroup}>
                 <TouchableOpacity
                   onPress={handleShare}
-                  style={styles.actionIcon}
+                  style={styles.actionCircle}
                 >
-                  <Ionicons name="share-outline" size={22} color="#4ecca3" />
+                  <Ionicons name="share-outline" size={20} color="#4ecca3" />
                 </TouchableOpacity>
+
                 <TouchableOpacity
                   onPress={onFavorite}
-                  style={styles.actionIcon}
+                  style={styles.actionCircle}
                 >
                   <Ionicons
                     name={card.isFavorite ? "heart" : "heart-outline"}
-                    size={22}
+                    size={20}
                     color={card.isFavorite ? "#ef4444" : "#4ecca3"}
                   />
                 </TouchableOpacity>
+
                 <TouchableOpacity
                   onPress={() => onDelete(card.id)}
-                  style={styles.actionIcon}
+                  style={[styles.actionCircle, styles.deleteBtn]}
                 >
-                  <Ionicons name="trash-outline" size={22} color="#64748b" />
+                  <Ionicons name="trash-outline" size={20} color="#ef4444" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -144,8 +146,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f172a",
     borderTopLeftRadius: 35,
     borderTopRightRadius: 35,
-    height: "65%", // TAILLE RÉDUITE ICI (était 85%)
-    padding: 20,
+    height: "65%",
+    padding: 24, // Augmenté pour respirer
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
   },
@@ -153,19 +155,32 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 25,
   },
   closeBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "rgba(255,255,255,0.05)",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.08)",
     alignItems: "center",
     justifyContent: "center",
   },
-  actions: { flexDirection: "row", gap: 5 },
-  actionIcon: { padding: 8 },
-  scrollBody: { paddingBottom: 20 },
+  actionsGroup: {
+    flexDirection: "row",
+    gap: 12, // Espacement plus large et régulier entre les icônes
+  },
+  actionCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(78, 204, 163, 0.05)", // Fond très léger pour définir la zone de clic
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteBtn: {
+    backgroundColor: "rgba(100, 116, 139, 0.05)", // Teinte plus neutre pour supprimer
+  },
+  scrollBody: { paddingBottom: 40 },
   category: {
     color: "#4ecca3",
     fontWeight: "900",
@@ -176,43 +191,44 @@ const styles = StyleSheet.create({
   },
   title: {
     color: "white",
-    fontSize: 22,
+    fontSize: 24, // Légèrement augmenté
     fontWeight: "900",
-    lineHeight: 28,
+    lineHeight: 30,
     marginBottom: 15,
   },
   sourceContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 20,
+    marginBottom: 25,
     backgroundColor: "rgba(78, 204, 163, 0.08)",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 10,
     alignSelf: "flex-start",
   },
   sourceText: { color: "#4ecca3", fontSize: 12, fontWeight: "700" },
   divider: {
     height: 1,
     backgroundColor: "rgba(255,255,255,0.05)",
-    marginBottom: 20,
+    marginBottom: 25,
   },
   sectionLabel: {
     color: "rgba(255,255,255,0.3)",
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "900",
     marginBottom: 15,
+    letterSpacing: 1,
   },
-  bulletsContainer: { gap: 12 },
+  bulletsContainer: { gap: 16 },
   bulletRow: { flexDirection: "row", alignItems: "flex-start" },
   bullet: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: "#4ecca3",
-    marginTop: 7,
-    marginRight: 12,
+    marginTop: 8,
+    marginRight: 14,
   },
-  bulletText: { color: "#94a3b8", fontSize: 14, lineHeight: 20, flex: 1 },
+  bulletText: { color: "#94a3b8", fontSize: 15, lineHeight: 22, flex: 1 },
 });

@@ -7,7 +7,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 // Import de tes composants déjà créés
@@ -60,7 +60,7 @@ export default function Favorites() {
 
           <TouchableOpacity
             style={styles.profileCircle}
-            onPress={() => router.push("/profile")}
+            onPress={() => router.push("/Profil")}
           >
             <FontAwesome5 name="user-alt" size={18} color="#4ecca3" />
           </TouchableOpacity>

@@ -20,7 +20,7 @@ import { PulseCard } from "../components/features/PulseCard";
 import { PulseDetailModal } from "../components/features/PulseDetailModal";
 import { StatCard } from "../components/features/StatCard";
 import { ThemeSection } from "../components/features/ThemeSection";
-import { CustomAlert } from "../components/ui/CustomAlert"; // Import de ton nouveau composant
+import { CustomAlert } from "../components/ui/CustomAlert";
 import { NavBar } from "../components/ui/NavBar";
 
 if (
@@ -84,25 +84,47 @@ export default function Dashboard() {
     }).start();
   }, []);
 
-  // FONCTION : AJOUTER UNE VEILLE
+  // --- FONCTION : AJOUTER UNE VEILLE (AVEC SÉCURITÉ DOUBLONS) ---
   const handleAddNewTheme = (name: string) => {
+    const trimmedName = name.trim();
+
+    // 1. Vérification Doublon
+    const isDuplicate = themes.some(
+      (t) => t.name.toLowerCase() === trimmedName.toLowerCase(),
+    );
+
+    if (isDuplicate) {
+      setAlertConfig({
+        visible: true,
+        title: "DÉJÀ PRÉSENT",
+        message: `La thématique "${trimmedName}" existe déjà dans votre liste.`,
+      });
+      return;
+    }
+
+    // 2. Gestion de l'activation automatique (max 5)
     const activeCount = themes.filter((t) => t.isActive).length;
     const shouldBeActive = activeCount < MAX_VEILLES;
 
     if (!shouldBeActive) {
       setAlertConfig({
         visible: true,
-        title: "VEILLE CRÉÉE",
+        title: "VEILLE AJOUTÉE",
         message:
-          "Votre veille a été ajoutée mais reste inactive car vous avez déjà 5 veilles actives.",
+          "Thème ajouté ! Il est en attente car vous avez déjà 5 veilles actives.",
       });
     }
 
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setThemes((prev) => [
       ...prev,
-      { id: Date.now().toString(), name: name, isActive: shouldBeActive },
+      {
+        id: Date.now().toString(),
+        name: trimmedName,
+        isActive: shouldBeActive,
+      },
     ]);
+    setIsAddModalVisible(false); // Fermer la modale après succès
   };
 
   // FONCTION : LIKE / FAVORIS
@@ -138,7 +160,7 @@ export default function Dashboard() {
           visible: true,
           title: "LIMITE ATTEINTE",
           message:
-            "Désactivez une veille existante avant d'en activer une nouvelle (maximum 5).",
+            "Maximum 5 veilles actives. Désactivez-en une pour en libérer une autre.",
         });
         return;
       }
@@ -168,7 +190,7 @@ export default function Dashboard() {
       <Animated.View style={[styles.mainContent, { opacity: fadeAnim }]}>
         <DashboardHeader
           userName="Alex"
-          onProfilePress={() => router.push("/profile")}
+          onProfilePress={() => router.push("/Profil")}
         />
 
         <ScrollView
@@ -178,7 +200,7 @@ export default function Dashboard() {
           <View style={styles.statsContainer}>
             <StatCard
               icon="brain"
-              label="Cards"
+              label="Analyses"
               value={pulseCards.length.toString()}
               color="#4ecca3"
             />
@@ -236,7 +258,6 @@ export default function Dashboard() {
         onCancel={() => setCardToDelete(null)}
       />
 
-      {/* MODALE D'ALERTE PERSONNALISÉE (STYLE PULSE) */}
       <CustomAlert
         isVisible={alertConfig.visible}
         title={alertConfig.title}

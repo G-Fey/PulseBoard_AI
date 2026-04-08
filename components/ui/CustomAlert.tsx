@@ -8,25 +8,84 @@ interface Props {
   title: string;
   message: string;
   onClose: () => void;
+  onConfirm?: () => void;
+  confirmText?: string;
+  type?: "danger" | "warning" | "success";
 }
 
-export const CustomAlert = ({ isVisible, title, message, onClose }: Props) => {
+export const CustomAlert = ({
+  isVisible,
+  title,
+  message,
+  onClose,
+  onConfirm,
+  confirmText,
+  type = "warning",
+}: Props) => {
+  const getIcon = () => {
+    switch (type) {
+      case "danger":
+        return { name: "trash-outline", color: "#ef4444" };
+      case "success":
+        return { name: "checkmark-circle-outline", color: "#4ecca3" };
+      default:
+        return { name: "warning-outline", color: "#fbbf24" };
+    }
+  };
+
+  const iconData = getIcon();
+
   return (
     <Modal visible={isVisible} transparent animationType="fade">
       <View style={styles.overlay}>
         <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="dark" />
 
         <View style={styles.alertBox}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="warning-outline" size={28} color="#fbbf24" />
+          <View
+            style={[
+              styles.iconContainer,
+              { backgroundColor: `${iconData.color}15` },
+            ]}
+          >
+            <Ionicons
+              name={iconData.name as any}
+              size={28}
+              color={iconData.color}
+            />
           </View>
 
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
 
-          <TouchableOpacity style={styles.button} onPress={onClose}>
-            <Text style={styles.buttonText}>COMPRIS</Text>
-          </TouchableOpacity>
+          <View style={styles.buttonGroup}>
+            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+              <Text style={styles.cancelButtonText}>ANNULER</Text>
+            </TouchableOpacity>
+
+            {onConfirm && (
+              <TouchableOpacity
+                style={[
+                  styles.confirmButton,
+                  { backgroundColor: iconData.color },
+                ]}
+                onPress={onConfirm}
+              >
+                <Text
+                  style={[
+                    styles.confirmButtonText,
+                    {
+                      color:
+                        type === "danger" || type === "success"
+                          ? "white"
+                          : "#020817",
+                    },
+                  ]}
+                >
+                  {confirmText || "CONFIRMER"}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </View>
     </Modal>
@@ -41,7 +100,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.7)",
   },
   alertBox: {
-    width: "80%",
+    width: "85%",
     backgroundColor: "#0f172a",
     borderRadius: 24,
     padding: 25,
@@ -53,7 +112,6 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "rgba(251, 191, 36, 0.1)",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 15,
@@ -64,6 +122,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     marginBottom: 10,
     textAlign: "center",
+    letterSpacing: 1,
   },
   message: {
     color: "rgba(255, 255, 255, 0.6)",
@@ -72,17 +131,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 25,
   },
-  button: {
-    backgroundColor: "#4ecca3",
+  buttonGroup: { flexDirection: "row", gap: 12, width: "100%" },
+  cancelButton: {
+    flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 12,
-    width: "100%",
     alignItems: "center",
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.05)",
   },
-  buttonText: {
-    color: "#020817",
-    fontWeight: "900",
-    fontSize: 14,
+  confirmButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderRadius: 12,
   },
+  cancelButtonText: { color: "white", fontWeight: "700", fontSize: 13 },
+  confirmButtonText: { fontWeight: "900", fontSize: 13 },
 });
