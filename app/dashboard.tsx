@@ -12,12 +12,15 @@ import {
   View,
 } from "react-native";
 
+// --- IMPORTS ---
+import { AddThemeModal } from "../components/features/AddThemeModal";
 import { DashboardHeader } from "../components/features/DashboardHeader";
 import { DeleteConfirmModal } from "../components/features/DeleteConfirmModal";
 import { PulseCard } from "../components/features/PulseCard";
 import { PulseDetailModal } from "../components/features/PulseDetailModal";
 import { StatCard } from "../components/features/StatCard";
 import { ThemeSection } from "../components/features/ThemeSection";
+import { CustomAlert } from "../components/ui/CustomAlert"; // Import de ton nouveau composant
 import { NavBar } from "../components/ui/NavBar";
 
 if (
@@ -35,6 +38,13 @@ export default function Dashboard() {
   const [cardToDelete, setCardToDelete] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+
+  // État pour la modale d'alerte personnalisée
+  const [alertConfig, setAlertConfig] = useState({
+    visible: false,
+    title: "",
+    message: "",
+  });
 
   const MAX_VEILLES = 5;
 
@@ -74,6 +84,27 @@ export default function Dashboard() {
     }).start();
   }, []);
 
+  // FONCTION : AJOUTER UNE VEILLE
+  const handleAddNewTheme = (name: string) => {
+    const activeCount = themes.filter((t) => t.isActive).length;
+    const shouldBeActive = activeCount < MAX_VEILLES;
+
+    if (!shouldBeActive) {
+      setAlertConfig({
+        visible: true,
+        title: "VEILLE CRÉÉE",
+        message:
+          "Votre veille a été ajoutée mais reste inactive car vous avez déjà 5 veilles actives.",
+      });
+    }
+
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setThemes((prev) => [
+      ...prev,
+      { id: Date.now().toString(), name: name, isActive: shouldBeActive },
+    ]);
+  };
+
   // FONCTION : LIKE / FAVORIS
   const toggleFavorite = (id: string) => {
     setPulseCards((prev) =>
@@ -81,7 +112,6 @@ export default function Dashboard() {
         card.id === id ? { ...card, isFavorite: !card.isFavorite } : card,
       ),
     );
-    // Si la modale de détail est ouverte, on met aussi à jour la carte sélectionnée
     if (selectedCard && selectedCard.id === id) {
       setSelectedCard({
         ...selectedCard,
@@ -90,11 +120,30 @@ export default function Dashboard() {
     }
   };
 
+  // FONCTION : GESTION DES BULLES (Toggle avec limite)
   const handleThemePress = (id: string) => {
     if (isEditMode) {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setThemes((prev) => prev.filter((t) => t.id !== id));
     } else {
+      const themeToToggle = themes.find((t) => t.id === id);
+      const activeCount = themes.filter((t) => t.isActive).length;
+
+      if (
+        themeToToggle &&
+        !themeToToggle.isActive &&
+        activeCount >= MAX_VEILLES
+      ) {
+        setAlertConfig({
+          visible: true,
+          title: "LIMITE ATTEINTE",
+          message:
+            "Désactivez une veille existante avant d'en activer une nouvelle (maximum 5).",
+        });
+        return;
+      }
+
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setThemes((prev) =>
         prev.map((t) => (t.id === id ? { ...t, isActive: !t.isActive } : t)),
       );
@@ -148,6 +197,7 @@ export default function Dashboard() {
             maxVeilles={MAX_VEILLES}
             onToggleEdit={() => setIsEditMode(!isEditMode)}
             onThemePress={handleThemePress}
+            onAddPress={() => setIsAddModalVisible(true)}
           />
 
           <Text style={styles.sectionTitle}>DERNIÈRES ANALYSES</Text>
@@ -157,20 +207,26 @@ export default function Dashboard() {
                 key={card.id}
                 card={card}
                 onPress={() => setSelectedCard(card)}
-                onFavorite={() => toggleFavorite(card.id)} // <--- CONNECTÉ
+                onFavorite={() => toggleFavorite(card.id)}
               />
             ))}
           </View>
         </ScrollView>
       </Animated.View>
 
-      <NavBar onAdd={() => setIsAddModalVisible(true)} />
+      <NavBar />
+
+      <AddThemeModal
+        isVisible={isAddModalVisible}
+        onClose={() => setIsAddModalVisible(false)}
+        onAdd={handleAddNewTheme}
+      />
 
       <PulseDetailModal
         isVisible={!!selectedCard}
         card={selectedCard}
         onClose={() => setSelectedCard(null)}
-        onFavorite={() => toggleFavorite(selectedCard?.id)} // <--- CONNECTÉ
+        onFavorite={() => toggleFavorite(selectedCard?.id)}
         onDelete={setCardToDelete}
       />
 
@@ -178,6 +234,14 @@ export default function Dashboard() {
         isVisible={!!cardToDelete}
         onConfirm={handleDeleteCard}
         onCancel={() => setCardToDelete(null)}
+      />
+
+      {/* MODALE D'ALERTE PERSONNALISÉE (STYLE PULSE) */}
+      <CustomAlert
+        isVisible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        onClose={() => setAlertConfig({ ...alertConfig, visible: false })}
       />
     </View>
   );

@@ -8,6 +8,7 @@ interface Props {
   isEditMode: boolean;
   onToggleEdit: () => void;
   onThemePress: (id: string) => void;
+  onAddPress: () => void; // Ajout de la prop pour l'action d'ajout
   maxVeilles: number;
 }
 
@@ -16,6 +17,7 @@ export const ThemeSection = ({
   isEditMode,
   onToggleEdit,
   onThemePress,
+  onAddPress,
   maxVeilles,
 }: Props) => {
   const activeCount = themes.filter((t) => t.isActive).length;
@@ -26,17 +28,27 @@ export const ThemeSection = ({
         <Text style={styles.sectionTitle}>
           VEILLES ACTIVES ({activeCount}/{maxVeilles})
         </Text>
-        <TouchableOpacity
-          onPress={onToggleEdit}
-          style={[styles.editButton, isEditMode && styles.editButtonActive]}
-        >
-          <Ionicons
-            name={isEditMode ? "checkmark" : "trash-outline"}
-            size={18}
-            color={isEditMode ? "#4ecca3" : "#64748b"}
-          />
-        </TouchableOpacity>
+
+        <View style={styles.actionGroup}>
+          {/* Nouveau bouton Ajouter */}
+          <TouchableOpacity onPress={onAddPress} style={styles.editButton}>
+            <Ionicons name="add" size={18} color="#4ecca3" />
+          </TouchableOpacity>
+
+          {/* Bouton Édition / Poubelle */}
+          <TouchableOpacity
+            onPress={onToggleEdit}
+            style={[styles.editButton, isEditMode && styles.editButtonActive]}
+          >
+            <Ionicons
+              name={isEditMode ? "checkmark" : "trash-outline"}
+              size={18}
+              color={isEditMode ? "#4ecca3" : "#64748b"}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
+
       <View style={styles.themesGrid}>
         {themes.map((item) => (
           <ThemeBubble
@@ -59,6 +71,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
+  actionGroup: {
+    flexDirection: "row",
+    gap: 8, // Espace entre le bouton + et la poubelle
+  },
   sectionTitle: {
     color: "rgba(255,255,255,0.3)",
     fontSize: 11,
@@ -69,7 +85,14 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 10,
     backgroundColor: "rgba(255,255,255,0.03)",
+    minWidth: 36,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  editButtonActive: { borderColor: "#4ecca3", borderWidth: 1 },
+  editButtonActive: {
+    borderColor: "rgba(78, 204, 163, 0.5)",
+    borderWidth: 1,
+    backgroundColor: "rgba(78, 204, 163, 0.05)",
+  },
   themesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 });
