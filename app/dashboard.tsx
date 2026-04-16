@@ -94,6 +94,7 @@ export default function Dashboard() {
 
   const triggerAnim = (animName: string) => {
     setActiveAnim(animName);
+    // On repasse à null rapidement pour permettre de redéclencher la même animation plus tard
     setTimeout(() => setActiveAnim(null), 100);
   };
 
@@ -191,14 +192,14 @@ export default function Dashboard() {
         style={StyleSheet.absoluteFillObject}
       />
 
-      {/* ZONE COMPAGNON (Sous l'UI, ne bloque pas les clics) */}
+      {/* ZONE COMPAGNON (Derrière l'UI, ne bloque pas les clics) */}
       <View style={styles.canvasContainer} pointerEvents="none">
         <Companion triggerAction={activeAnim} seriesPercent={seriesValue} />
       </View>
 
       <Animated.View style={[styles.mainContent, { opacity: fadeAnim }]}>
         <DashboardHeader
-          userName="Alex"
+          userName="Jeffrey"
           onProfilePress={() => router.push("/Profil")}
         />
 
@@ -285,7 +286,7 @@ const styles = StyleSheet.create({
   canvasContainer: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 0,
-    opacity: 0.8,
+    opacity: 0.8, // Ajuste selon tes préférences visuelles
   },
   mainContent: { flex: 1, paddingTop: 50, zIndex: 1 },
   scrollArea: { paddingHorizontal: 25, paddingBottom: 150 },
