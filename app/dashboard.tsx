@@ -1,4 +1,3 @@
-import { Canvas } from "@react-three/fiber";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
@@ -14,7 +13,7 @@ import {
 } from "react-native";
 
 // --- IMPORTS ---
-import { Companion } from "../components/3d/Companion"; // Ton nouveau composant
+import { Companion } from "../components/3d/Companion";
 import { AddThemeModal } from "../components/features/AddThemeModal";
 import { DashboardHeader } from "../components/features/DashboardHeader";
 import { DeleteConfirmModal } from "../components/features/DeleteConfirmModal";
@@ -36,8 +35,8 @@ export default function Dashboard() {
   const router = useRouter();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // --- ÉTATS DONNÉES ---
-  const [seriesValue, setSeriesValue] = useState(57); // % de la série
+  // --- ÉTATS DONNÉES & ANIMATIONS ---
+  const [seriesValue, setSeriesValue] = useState(57);
   const [activeAnim, setActiveAnim] = useState<string | null>(null);
 
   const [selectedCard, setSelectedCard] = useState<any>(null);
@@ -87,15 +86,12 @@ export default function Dashboard() {
       useNativeDriver: true,
     }).start();
 
-    // Condition : Aucune veille active
-    const activeCount = themes.filter((t) => t.isActive).length;
-    if (activeCount === 0) triggerAnim("hungry");
-
-    // Condition : Aucune PulseCard
-    if (pulseCards.length === 0) triggerAnim("work");
+    // Vérifications initiales pour le compagnon
+    const activeThemes = themes.filter((t) => t.isActive).length;
+    if (activeThemes === 0) triggerAnim("hungry_animation");
+    else if (pulseCards.length === 0) triggerAnim("work_animation");
   }, []);
 
-  // Utilitaire pour lancer une animation Blender
   const triggerAnim = (animName: string) => {
     setActiveAnim(animName);
     setTimeout(() => setActiveAnim(null), 100);
@@ -108,7 +104,7 @@ export default function Dashboard() {
     );
 
     if (isDuplicate) {
-      triggerAnim("etourdie"); // Erreur doublon
+      triggerAnim("etourdie_animation");
       setAlertConfig({
         visible: true,
         title: "DÉJÀ PRÉSENT",
@@ -121,42 +117,42 @@ export default function Dashboard() {
     const shouldBeActive = activeCount < MAX_VEILLES;
 
     if (!shouldBeActive) {
-      triggerAnim("etourdie"); // Erreur limite
+      triggerAnim("etourdie_animation");
       setAlertConfig({
         visible: true,
         title: "LIMITE",
         message: "Maximum 5 veilles actives.",
       });
     } else {
-      triggerAnim("ecriture"); // Succès ajout
+      triggerAnim("ecriture_animation");
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setThemes((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          name: trimmedName,
+          isActive: shouldBeActive,
+        },
+      ]);
+      setIsAddModalVisible(false);
     }
-
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setThemes((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        name: trimmedName,
-        isActive: shouldBeActive,
-      },
-    ]);
-    setIsAddModalVisible(false);
   };
 
   const toggleFavorite = (id: string) => {
-    const isNowFavorite = !pulseCards.find((c) => c.id === id)?.isFavorite;
-    triggerAnim(isNowFavorite ? "heart" : "triste"); // Like -> heart, Dislike -> triste
+    const card = pulseCards.find((c) => c.id === id);
+    if (!card) return;
+
+    triggerAnim(!card.isFavorite ? "heart_animation" : "triste_animation");
 
     setPulseCards((prev) =>
-      prev.map((card) =>
-        card.id === id ? { ...card, isFavorite: !card.isFavorite } : card,
-      ),
+      prev.map((c) => (c.id === id ? { ...c, isFavorite: !c.isFavorite } : c)),
     );
-    if (selectedCard?.id === id)
+    if (selectedCard?.id === id) {
       setSelectedCard({
         ...selectedCard,
         isFavorite: !selectedCard.isFavorite,
       });
+    }
   };
 
   const handleThemePress = (id: string) => {
@@ -172,11 +168,11 @@ export default function Dashboard() {
         !themeToToggle.isActive &&
         activeCount >= MAX_VEILLES
       ) {
-        triggerAnim("etourdie");
+        triggerAnim("etourdie_animation");
         setAlertConfig({
           visible: true,
           title: "LIMITE ATTEINTE",
-          message: "Désactivez-en une d'abord.",
+          message: "Désactivez une veille.",
         });
         return;
       }
@@ -195,13 +191,9 @@ export default function Dashboard() {
         style={StyleSheet.absoluteFillObject}
       />
 
-      {/* --- PERSONNAGE 3D EN ARRIÈRE PLAN --- */}
+      {/* ZONE COMPAGNON (Sous l'UI, ne bloque pas les clics) */}
       <View style={styles.canvasContainer} pointerEvents="none">
-        <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
-          <ambientLight intensity={0.8} />
-          <pointLight position={[10, 10, 10]} />
-          <Companion triggerAction={activeAnim} seriesPercent={seriesValue} />
-        </Canvas>
+        <Companion triggerAction={activeAnim} seriesPercent={seriesValue} />
       </View>
 
       <Animated.View style={[styles.mainContent, { opacity: fadeAnim }]}>
@@ -254,6 +246,8 @@ export default function Dashboard() {
       </Animated.View>
 
       <NavBar />
+
+      {/* MODALES */}
       <AddThemeModal
         isVisible={isAddModalVisible}
         onClose={() => setIsAddModalVisible(false)}
@@ -272,7 +266,7 @@ export default function Dashboard() {
           setPulseCards((p) => p.filter((c) => c.id !== cardToDelete));
           setCardToDelete(null);
           setSelectedCard(null);
-          triggerAnim("triste"); // Animation lors de la suppression
+          triggerAnim("triste_animation");
         }}
         onCancel={() => setCardToDelete(null)}
       />
@@ -290,8 +284,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#020817" },
   canvasContainer: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 0, // Derrière tout
-    opacity: 0.6, // Pour ne pas trop gêner la lecture des cartes
+    zIndex: 0,
+    opacity: 0.8,
   },
   mainContent: { flex: 1, paddingTop: 50, zIndex: 1 },
   scrollArea: { paddingHorizontal: 25, paddingBottom: 150 },

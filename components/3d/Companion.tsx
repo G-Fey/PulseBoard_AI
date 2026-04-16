@@ -1,55 +1,54 @@
-import { useAnimations, useGLTF } from "@react-three/drei";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
+import { StyleSheet, View } from "react-native";
 
-export function Companion({ triggerAction, seriesPercent }) {
-  const group = useRef();
-  // Remplace par le chemin réel de ton export Blender
-  const { animations, scene } = useGLTF(
-    require("../../assets/models/companion.glb"),
-  );
-  const { actions } = useAnimations(animations, group);
-  const [currentAction, setCurrentAction] = useState("");
+interface CompanionProps {
+  triggerAction: string | null;
+  seriesPercent: number;
+}
 
-  const getBaseIdle = (percent: number) => {
+export function Companion({ triggerAction, seriesPercent }: CompanionProps) {
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Logique pour déterminer l'idle de série selon le pourcentage
+  const getSeriesIdle = (percent: number) => {
     if (percent >= 100) return "idle_surexite";
-    if (percent >= 70) return "idle_content";
+    if (percent >= 70) return "idle_contant";
     if (percent >= 50) return "idle_normal";
     if (percent >= 25) return "idle_triste";
     return "idle_depress";
   };
 
-  const playTransition = (name: string, isOneShot = false) => {
-    if (!actions[name]) return;
+  const resetSeriesTimer = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
 
-    const prevAction = actions[currentAction];
-    const nextAction = actions[name];
-
-    if (prevAction && prevAction !== nextAction) prevAction.fadeOut(0.5);
-
-    nextAction.reset().fadeIn(0.5).play();
-
-    if (isOneShot) {
-      setTimeout(
-        () => {
-          playTransition(getBaseIdle(seriesPercent), false);
-        },
-        nextAction.getClip().duration * 1000 - 500,
-      );
-    }
-    setCurrentAction(name);
+    // Timer de 3 minutes (180 000 ms)
+    timerRef.current = setTimeout(() => {
+      const seriesAnim = getSeriesIdle(seriesPercent);
+      console.log(`[Unity] Envoi de l'animation de série : ${seriesAnim}`);
+      // Ici sera ajouté : UnityModule.postMessage('GameObject', 'PlayAnimation', seriesAnim);
+    }, 180000);
   };
 
-  // Switch d'Idle auto si la série change
   useEffect(() => {
-    if (!triggerAction) playTransition(getBaseIdle(seriesPercent));
+    resetSeriesTimer();
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, [seriesPercent]);
 
-  // Déclenchement d'une action spéciale
   useEffect(() => {
-    if (triggerAction) playTransition(triggerAction, true);
+    if (triggerAction) {
+      console.log(`[Unity] Envoi de l'action : ${triggerAction}`);
+      // Ici sera ajouté : UnityModule.postMessage('GameObject', 'PlayAnimation', triggerAction);
+      resetSeriesTimer();
+    }
   }, [triggerAction]);
 
   return (
-    <primitive ref={group} object={scene} position={[0, -1.5, 0]} scale={2.2} />
+    <View style={StyleSheet.absoluteFill}>
+      {/* Le composant <UnityView /> sera intégré ici 
+          une fois la bibliothèque installée.
+      */}
+    </View>
   );
 }
